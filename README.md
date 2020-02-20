@@ -1,20 +1,18 @@
-## Document Server and Nextcloud Docker installation
+## Nextcloud and ONLYOFFICE Document Server Docker Integration
 
-Document Server and Nextcloud Docker installation will install the preconfigured version of [ONLYOFFICE Document Server][2] connected to Nextcloud to your server running them in Docker containers.
-
+Nextcloud and ONLYOFFICE Document Server Docker integration will install the preconfigured version of [ONLYOFFICE Document Server](https://github.com/ONLYOFFICE/DocumentServer) connected to Nextcloud on a single host running docker containers.
 
 ## Requirements
 
 * The latest version of Docker (can be downloaded here: [https://docs.docker.com/engine/installation/](https://docs.docker.com/engine/installation/))
 * Docker compose (can be downloaded here: [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/))
 
-
 ## Installation
 
 1. Get the latest version of this repository running the command:
 
     ```
-    git clone https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud
+    git clone https://github.com/chadlabs/docker-onlyoffice-nextcloud
     cd docker-onlyoffice-nextcloud
     ```
 
@@ -40,85 +38,72 @@ Document Server and Nextcloud Docker installation will install the preconfigured
 
 Now you can enter Nextcloud and create a new document. It will be opened in ONLYOFFICE Document Server.
 
+## Installing SSL Server Certificates into nginx
+The docker compose file is assuming these containers on running on a Linux host 
+and has mounted the local letsencrypt directory into the nginx container. This allows
+the automated creation of SSL certs for the host via the certbot process for the Let's Encrypt CA. 
 
-## ONLYOFFICE Document Server editions
+The process below is for a CentOS 8 docker host.
 
-Here we offer you to deploy ownCloud with preconfigured free version of ONLYOFFICE Document Server. Note that there're commercial versions of it. 
+1. Edit nginx.conf and install the server name (look for EDIT) and then restart nginx
+  ```
+  cd docker-onlyoffice-nextcloud
+  vim nginx.conf
+  docker restart nginx-server
+  ```
+2. Download and install certbot
+  ```
+  wget https://dl.eff.org/certbot-auto
+  sudo mv certbot-auto /usr/local/bin/certbot-auto
+  sudo chown root /usr/local/bin/certbot-auto
+  sudo chmod 0755 /usr/local/bin/certbot-auto
+  ```
+3. With port 80 world accessible, use certbot to create the SSL cert for the server
+  ```
+  certbot-auto certonly --webroot --agree-tos --email admin@yourdomain.net -d server.yourdomain.net -w /var/lib/docker/volumes/docker-onlyoffice-nextcloud_app_data/_data
+  ```
+4. Edit nginx.conf and remove the comments from SSL sections (look for EDIT) and then restart nginx
+  ```
+  vim nginx.conf
+  docker restart nginx-server
+  ```
 
-**ONLYOFFICE Document Server:**
+## Last Steps
+Currently, the Nextcloud login page is broken when HTTPS is enabled. Add the "overwriteprotocol" to the php configuration (see references below)
+  ```
+  cd /var/lib/docker/volumes/docker-onlyoffice-nextcloud_app_data/_data
+  vim config/config.php
+  docker restart app-server
+  ```
 
-* Community Edition (`onlyoffice-documentserver` package)
+## References
 
-* Integration Edition (`onlyoffice-documentserver-ie` package)
+### Nextcloud
 
-The table below will help you make the right choice.
+[Official Website](https://nextcloud.com/)
 
-| Pricing and licensing | Community Edition | Integration Edition |
-| ------------- | ------------- | ------------- |
-| | [Get it now](https://www.onlyoffice.com/download.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)  | [Start Free Trial](https://www.onlyoffice.com/connectors-request.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)  |
-| Cost  | FREE  | [Go to the pricing page](https://www.onlyoffice.com/integration-edition-prices.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)  |
-| Simultaneous connections | up to 20 maximum  | As in chosen pricing plan |
-| Number of users | up to 20 recommended | As in chosen pricing plan |
-| License | GNU AGPL v.3 | Proprietary |
-| **Support** | **Community Edition** | **Integration Edition** | 
-| Documentation | [Help Center](https://helpcenter.onlyoffice.com/server/docker/opensource/index.aspx) | [Help Center](https://helpcenter.onlyoffice.com/server/integration-edition/index.aspx) |
-| Standard support | [GitHub](https://github.com/ONLYOFFICE/DocumentServer/issues) or paid | One year support included |
-| Premium support | [Buy Now](https://www.onlyoffice.com/support.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC) | [Buy Now](https://www.onlyoffice.com/support.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC) |
-| **Services** | **Community Edition** | **Integration Edition** | 
-| Conversion Service                | + | + | 
-| Document Builder Service          | + | + | 
-| **Interface** | **Community Edition** | **Integration Edition** |
-| Tabbed interface                       | + | + |
-| White Label                            | - | - |
-| Integrated test example (node.js)     | - | + |
-| **Plugins & Macros** | **Community Edition** | **Integration Edition** |
-| Plugins                           | + | + |
-| Macros                            | + | + |
-| **Collaborative capabilities** | **Community Edition** | **Integration Edition** |
-| Two co-editing modes              | + | + |
-| Comments                          | + | + |
-| Built-in chat                     | + | + |
-| Review and tracking changes       | + | + |
-| Display modes of tracking changes | + | + |
-| Version history                   | + | + |
-| **Document Editor features** | **Community Edition** | **Integration Edition** |
-| Font and paragraph formatting   | + | + |
-| Object insertion                | + | + |
-| Content control                 | + | + |
-| Layout tools                    | + | + |
-| Table of contents               | + | + |
-| Navigation panel                | + | + |
-| Mail Merge                      | + | + |
-| **Spreadsheet Editor features** | **Community Edition** | **Integration Edition** |
-| Font and paragraph formatting   | + | + |
-| Object insertion                | + | + |
-| Functions, formulas, equations  | + | + |
-| Table templates                 | + | + |
-| Pivot tables                    | +* | +* |
-| **Presentation Editor features** | **Community Edition** | **Integration Edition** |
-| Font and paragraph formatting   | + | + |
-| Object insertion                | + | + |
-| Animations                      | + | + |
-| Presenter mode                  | + | + |
-| Notes                           | + | + |
-| | [Get it now](https://www.onlyoffice.com/download.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)  | [Start Free Trial](https://www.onlyoffice.com/connectors-request.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)  |
+[Docker Hub](https://hub.docker.com/_/nextcloud)
 
-*Changing style and deleting (Full support coming soon)
+[Code Repository](https://github.com/nextcloud) 
 
+### ONLYOFFICE
+[Official Website](https://www.onlyoffice.com)
 
-## Project Information
+[Docker Hub](https://hub.docker.com/r/onlyoffice/documentserver)
 
-Official website: [https://www.onlyoffice.com/](https://www.onlyoffice.com/?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)
+[Code Repository (Docker)](https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud)
 
-Code repository: [https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud](https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud "https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud")
+his repo offers Nextcloud with preconfigured free version of the ONLYOFFICE Document Server.  
+Here is a guide to all of the [ONLYOFFICE offerings](https://github.com/ONLYOFFICE/docker-onlyoffice-nextcloud#onlyoffice-document-server-editions).
 
-Integration Edition: [http://www.onlyoffice.com/connectors-nextcloud.aspx](https://www.onlyoffice.com/connectors-nextcloud.aspx?utm_source=github&utm_medium=cpc&utm_campaign=GitHubDockerNC)
+### Integration Guidance
 
+[Nextcloud and ONLYOFFICE integration](https://www.linuxbabe.com/docker/onlyoffice-nextcloud-integration-docker)
 
-## User Feedback and Support
+### SSL Certificates
+[certbot for nginx on RHEL/CentOS 8](https://certbot.eff.org/lets-encrypt/centosrhel8-nginx)
 
-If you have any problems with or questions about [ONLYOFFICE Document Server][2], please visit our official forum to find answers to your questions: [dev.onlyoffice.org][1] or you can ask and answer ONLYOFFICE development questions on [Stack Overflow][3].
+### Last Steps
+[Broken login page with HTTPS](https://github.com/nextcloud/server/issues/17409)
 
-[1]: http://dev.onlyoffice.org
-[2]: https://github.com/ONLYOFFICE/DocumentServer
-[3]: http://stackoverflow.com/questions/tagged/onlyoffice
+[overwriteprotocol](https://docs.nextcloud.com/server/10.0/admin_manual/configuration_server/reverse_proxy_configuration.html#multiple-domains-reverse-ssl-proxy)
